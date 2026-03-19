@@ -1,8 +1,8 @@
 {
   "name": "link_checker_service",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "A backend tool that, given an input URL, extracts all internal links from the site and concurrently checks them for HTTP errors. Error results are persisted.",
+  "author": "Angel Diaz Mendiburu <angel.diaz.mendiburu@gmail.com>",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
