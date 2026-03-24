@@ -1,7 +1,6 @@
 export const JOB_REPOSITORY = 'IJobRepository';
 
 export interface CreateJobData {
-  id: number;
   url: string;
   concurrency: number;
   status: string;

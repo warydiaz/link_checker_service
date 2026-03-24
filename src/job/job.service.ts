@@ -16,7 +16,6 @@ export class JobsService {
   DEFAULT_CONCURRENCY = 2;
   async createJob(createJobDto: CreateJobDto) {
     const job = await this.jobRepository.create({
-      id: Date.now(), // Genera un ID único basado en el timestamp
       url: createJobDto.url,
       concurrency: createJobDto.concurrency ?? this.DEFAULT_CONCURRENCY,
       status: 'running',
