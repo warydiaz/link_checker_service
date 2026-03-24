@@ -1,8 +1,16 @@
 import { Module } from '@nestjs/common';
-import { JobsModule } from './Jobs/jobs.module';
+import { ConfigModule } from '@nestjs/config';
+import { JobsModule } from './job/job.module';
+import { CrawlerModule } from './crawler/crawler.module';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
-  imports: [JobsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    JobsModule,
+    CrawlerModule,
+    DatabaseModule,
+  ],
   controllers: [],
   providers: [],
 })
