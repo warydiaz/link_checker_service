@@ -7,14 +7,18 @@ export interface CreateJobData {
   startedAt: Date;
 }
 
+export interface JobData extends CreateJobData {
+  _id: string;
+}
+
 export interface UpdateJobData {
-  id: number;
+  _id: string;
   status: string;
 }
 
 export interface IJobRepository {
-  findJobById(id: number): Promise<CreateJobData | null>;
-  create(data: CreateJobData): Promise<CreateJobData>;
-  update(id: number, data: UpdateJobData): Promise<CreateJobData>;
-  delete(id: number): Promise<void>;
+  findJobById(id: string): Promise<JobData | null>;
+  create(data: CreateJobData): Promise<JobData>;
+  update(id: string, data: UpdateJobData): Promise<JobData>;
+  delete(id: string): Promise<void>;
 }

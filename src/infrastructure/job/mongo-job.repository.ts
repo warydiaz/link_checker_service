@@ -1,38 +1,46 @@
 import {
   CreateJobData,
   IJobRepository,
+  JobData,
   UpdateJobData,
 } from 'src/job/repository/job.repository.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Job } from './job.schema';
+import { Job, JobDocument } from './job.schema';
 
 export class MongoJobRepository implements IJobRepository {
   constructor(@InjectModel(Job.name) private readonly jobModel: Model<Job>) {}
 
-  async findJobById(_id: number): Promise<CreateJobData | null> {
-    return await this.jobModel.findById(_id).exec();
+  private toJobData(doc: JobDocument): JobData {
+    return {
+      _id: doc._id.toString(),
+      url: doc.url,
+      concurrency: doc.concurrency,
+      status: doc.status,
+      startedAt: doc.startedAt,
+    };
   }
 
-  async create(_data: CreateJobData): Promise<CreateJobData> {
-    const job = new this.jobModel(_data);
-    return await job.save();
+  async findJobById(_id: string): Promise<JobData | null> {
+    const doc = await this.jobModel.findById(_id).exec();
+    return doc ? this.toJobData(doc) : null;
   }
 
-  async update(_id: number, _data: UpdateJobData): Promise<CreateJobData> {
-    const job = await this.jobModel.findByIdAndUpdate(_id, _data, {
+  async create(_data: CreateJobData): Promise<JobData> {
+    const doc = await new this.jobModel(_data).save();
+    return this.toJobData(doc);
+  }
+
+  async update(_id: string, _data: UpdateJobData): Promise<JobData> {
+    const doc = await this.jobModel.findByIdAndUpdate(_id, _data, {
       new: true,
     });
-    if (!job) {
-      throw new Error('Job not found');
-    }
-    return job;
+    if (!doc) throw new Error('Job not found');
+    return this.toJobData(doc);
   }
 
-  async delete(_id: number): Promise<void> {
+  async delete(_id: string): Promise<void> {
     const result = await this.jobModel.findByIdAndDelete(_id);
-    if (!result) {
-      throw new Error('Job not found');
-    }
+    if (!result) throw new Error('Job not found');
   }
 }

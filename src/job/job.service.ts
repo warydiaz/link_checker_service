@@ -4,6 +4,7 @@ import { CrawlerService } from 'src/crawler/crawler.service';
 import {
   IJobRepository,
   JOB_REPOSITORY,
+  JobData,
 } from './repository/job.repository.interface';
 
 @Injectable()
@@ -14,20 +15,22 @@ export class JobsService {
   ) {}
 
   DEFAULT_CONCURRENCY = 2;
-  async createJob(createJobDto: CreateJobDto) {
+  RUNNING_STATUS = 'running';
+
+  async createJob(createJobDto: CreateJobDto): Promise<JobData> {
     const job = await this.jobRepository.create({
       url: createJobDto.url,
       concurrency: createJobDto.concurrency ?? this.DEFAULT_CONCURRENCY,
-      status: 'running',
+      status: this.RUNNING_STATUS,
       startedAt: new Date(),
     });
 
-    // Sin await — el crawling corre en background
-    /* this.crawlerService.startCrawl(
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    this.crawlerService.startCrawl(
       job._id,
       createJobDto.url,
-      createJobDto.concurrency,
-    );*/
+      createJobDto.concurrency!,
+    );
 
     return job; // El controller ya puede responder 202
   }
