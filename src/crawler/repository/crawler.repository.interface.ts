@@ -1,8 +1,3 @@
-import {
-  JobData,
-  UpdateJobData,
-} from 'src/job/repository/job.repository.interface';
-
 export const CRAWLER_REPOSITORY = 'ICrawlerRepository';
 
 export interface BrokenLinkData {
@@ -16,6 +11,5 @@ export interface BrokenLinkData {
 }
 
 export interface ICrawlerRepository {
-  update(id: string, data: UpdateJobData): Promise<JobData>;
   registerBrokenLink(brokenLinkData: BrokenLinkData): Promise<void>;
 }

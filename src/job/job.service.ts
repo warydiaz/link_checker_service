@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { CreateJobDto } from './dto/create-job.dto';
 import { CrawlerService } from 'src/crawler/crawler.service';
 import {
@@ -9,29 +9,45 @@ import {
 
 @Injectable()
 export class JobsService {
+  private readonly logger = new Logger(JobsService.name);
+
   constructor(
     @Inject(JOB_REPOSITORY) private readonly jobRepository: IJobRepository,
     private readonly crawlerService: CrawlerService,
   ) {}
 
   DEFAULT_CONCURRENCY = 2;
-  RUNNING_STATUS = 'running';
 
   async createJob(createJobDto: CreateJobDto): Promise<JobData> {
     const job = await this.jobRepository.create({
       url: createJobDto.url,
       concurrency: createJobDto.concurrency ?? this.DEFAULT_CONCURRENCY,
-      status: this.RUNNING_STATUS,
+      status: 'running',
       startedAt: new Date(),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.crawlerService.startCrawl(
-      job._id,
-      createJobDto.url,
-      createJobDto.concurrency!,
-    );
+    this.runCrawl(job._id, createJobDto.url, job.concurrency);
 
-    return job; // El controller ya puede responder 202
+    return job;
+  }
+
+  private runCrawl(jobId: string, seedUrl: string, concurrency: number): void {
+    this.crawlerService
+      .startCrawl(jobId, seedUrl, concurrency)
+      .then(() => {
+        return this.jobRepository.update(jobId, {
+          _id: jobId,
+          status: 'completed',
+          finishedAt: new Date(),
+        });
+      })
+      .catch((err: unknown) => {
+        this.logger.error(`Job ${jobId} failed: ${String(err)}`);
+        return this.jobRepository.update(jobId, {
+          _id: jobId,
+          status: 'failed',
+          finishedAt: new Date(),
+        });
+      });
   }
 }

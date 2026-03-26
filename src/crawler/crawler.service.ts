@@ -66,6 +66,7 @@ export class CrawlerService {
                 `Failed to register broken link for ${url}: ${String(err)}`,
               );
             });
+
           return;
         }
 

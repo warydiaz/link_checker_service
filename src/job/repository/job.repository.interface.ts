@@ -5,6 +5,7 @@ export interface CreateJobData {
   concurrency: number;
   status: string;
   startedAt: Date;
+  finishedAt?: Date;
 }
 
 export interface JobData extends CreateJobData {
@@ -14,6 +15,7 @@ export interface JobData extends CreateJobData {
 export interface UpdateJobData {
   _id: string;
   status: string;
+  finishedAt: Date;
 }
 
 export interface IJobRepository {

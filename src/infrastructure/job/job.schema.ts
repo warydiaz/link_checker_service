@@ -9,6 +9,7 @@ export class Job {
   @Prop() concurrency: number;
   @Prop() status: string;
   @Prop() startedAt: Date;
+  @Prop() finishedAt?: Date;
 }
 
 export const JobSchema = SchemaFactory.createForClass(Job);
