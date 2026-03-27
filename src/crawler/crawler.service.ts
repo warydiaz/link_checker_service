@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import pLimit from 'p-limit';
+import {
+  CONCURRENCY_LIMITER_FACTORY,
+  IConcurrencyLimiterFactory,
+} from './interfaces/concurrency-limiter.interface';
 import {
   HTTP_FETCHER,
   IHttpFetcher,
@@ -25,6 +28,8 @@ export class CrawlerService {
 
   constructor(
     private readonly configService: ConfigService,
+    @Inject(CONCURRENCY_LIMITER_FACTORY)
+    private readonly limiterFactory: IConcurrencyLimiterFactory,
     @Inject(HTTP_FETCHER) private readonly httpFetcher: IHttpFetcher,
     @Inject(LINK_EXTRACTOR) private readonly linkExtractor: ILinkExtractor,
     @Inject(CRAWLER_REPOSITORY) private readonly repository: ICrawlerRepository,
@@ -41,12 +46,12 @@ export class CrawlerService {
 
     const visited = new Set<string>([seedUrl]);
     const queue: QueueItem[] = [{ url: seedUrl, sourceUrl: seedUrl }];
-    const limit = pLimit(concurrency);
+    const limiter = this.limiterFactory.create(concurrency);
     const maxUrls = this.configService.get<number>('MAX_URLS_PER_JOB', 5000);
     const activeTasks = new Set<Promise<void>>();
 
     const processUrl = (url: string, sourceUrl: string): Promise<void> => {
-      const task = limit(async () => {
+      const task = limiter.run(async () => {
         const { html, statusCode, responseTimeMs, error } =
           await this.httpFetcher.fetch(url);
 
@@ -83,13 +88,13 @@ export class CrawlerService {
         }
       });
 
-      task.finally(() => activeTasks.delete(task));
+      void task.finally(() => activeTasks.delete(task));
       activeTasks.add(task);
       return task;
     };
 
     while (queue.length > 0 || activeTasks.size > 0) {
-      while (queue.length > 0 && limit.activeCount < concurrency) {
+      while (queue.length > 0 && limiter.activeCount < concurrency) {
         const { url, sourceUrl } = queue.shift()!;
         processUrl(url, sourceUrl);
       }
@@ -108,5 +113,9 @@ export class CrawlerService {
     } catch {
       return false;
     }
+  }
+
+  async getBrokenLinksByJobId(jobId: string) {
+    return await this.repository.getBrokenLinksByJobId(jobId);
   }
 }

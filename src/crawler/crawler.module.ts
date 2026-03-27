@@ -3,9 +3,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CrawlerService } from './crawler.service';
 import { HttpFetcherService } from './http-fetcher.service';
 import { LinkExtractorService } from './link-extractor.service';
+import { CONCURRENCY_LIMITER_FACTORY } from './interfaces/concurrency-limiter.interface';
 import { HTTP_FETCHER } from './interfaces/http-fetcher.interface';
 import { LINK_EXTRACTOR } from './interfaces/link-extractor.interface';
 import { CRAWLER_REPOSITORY } from './repository/crawler.repository.interface';
+import { PLimitConcurrencyLimiterFactory } from 'src/infrastructure/crawler/p-limit-concurrency-limiter.factory';
 import { MongoCrawlerRepository } from 'src/infrastructure/crawler/mongo-crawler.repository';
 import {
   BrokenLink,
@@ -22,6 +24,7 @@ import { Job, JobSchema } from 'src/infrastructure/job/job.schema';
   ],
   providers: [
     CrawlerService,
+    { provide: CONCURRENCY_LIMITER_FACTORY, useClass: PLimitConcurrencyLimiterFactory },
     { provide: HTTP_FETCHER, useClass: HttpFetcherService },
     { provide: LINK_EXTRACTOR, useClass: LinkExtractorService },
     { provide: CRAWLER_REPOSITORY, useClass: MongoCrawlerRepository },

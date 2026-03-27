@@ -16,4 +16,21 @@ export class MongoCrawlerRepository implements ICrawlerRepository {
     const brokenLink = new this.brokenLinkModel(brokenLinkData);
     await brokenLink.save();
   }
+
+  async getBrokenLinksByJobId(jobId: string): Promise<BrokenLinkData[]> {
+    const brokenLinks = await this.brokenLinkModel.find({ jobId }).exec();
+    return brokenLinks.map((link) => this.mapToBrokenLinkData(link));
+  }
+
+  private mapToBrokenLinkData(brokenLink: BrokenLink): BrokenLinkData {
+    return {
+      jobId: brokenLink.jobId,
+      url: brokenLink.url,
+      sourceUrl: brokenLink.sourceUrl,
+      statusCode: brokenLink.statusCode,
+      errorType: brokenLink.errorType,
+      errorMessage: brokenLink.errorMessage,
+      responseTimeMs: brokenLink.responseTimeMs,
+    };
+  }
 }

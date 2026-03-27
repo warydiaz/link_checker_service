@@ -1,3 +1,5 @@
+import { PaginationDto } from '../dto/pagination.dto';
+
 export const JOB_REPOSITORY = 'IJobRepository';
 
 export interface CreateJobData {
@@ -23,4 +25,5 @@ export interface IJobRepository {
   create(data: CreateJobData): Promise<JobData>;
   update(id: string, data: UpdateJobData): Promise<JobData>;
   delete(id: string): Promise<void>;
+  listJobs(pagination: PaginationDto): Promise<JobData[]>;
 }

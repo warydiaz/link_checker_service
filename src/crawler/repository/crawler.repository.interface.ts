@@ -12,4 +12,5 @@ export interface BrokenLinkData {
 
 export interface ICrawlerRepository {
   registerBrokenLink(brokenLinkData: BrokenLinkData): Promise<void>;
+  getBrokenLinksByJobId(jobId: string): Promise<BrokenLinkData[]>;
 }

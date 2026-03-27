@@ -6,6 +6,8 @@ import {
   JOB_REPOSITORY,
   JobData,
 } from './repository/job.repository.interface';
+import { PaginationDto } from './dto/pagination.dto';
+import { BrokenLinkData } from 'src/crawler/repository/crawler.repository.interface';
 
 @Injectable()
 export class JobsService {
@@ -16,12 +18,12 @@ export class JobsService {
     private readonly crawlerService: CrawlerService,
   ) {}
 
-  DEFAULT_CONCURRENCY = 2;
+  #DEFAULT_CONCURRENCY = 2;
 
   async createJob(createJobDto: CreateJobDto): Promise<JobData> {
     const job = await this.jobRepository.create({
       url: createJobDto.url,
-      concurrency: createJobDto.concurrency ?? this.DEFAULT_CONCURRENCY,
+      concurrency: createJobDto.concurrency ?? this.#DEFAULT_CONCURRENCY,
       status: 'running',
       startedAt: new Date(),
     });
@@ -29,6 +31,18 @@ export class JobsService {
     this.runCrawl(job._id, createJobDto.url, job.concurrency);
 
     return job;
+  }
+
+  async getJob(id: string): Promise<JobData | null> {
+    return await this.jobRepository.findJobById(id);
+  }
+
+  async getJobErrors(id: string): Promise<BrokenLinkData[]> {
+    return await this.crawlerService.getBrokenLinksByJobId(id);
+  }
+
+  async getAllJobs(paginationDto: PaginationDto): Promise<JobData[]> {
+    return await this.jobRepository.listJobs(paginationDto);
   }
 
   private runCrawl(jobId: string, seedUrl: string, concurrency: number): void {

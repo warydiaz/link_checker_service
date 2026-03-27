@@ -50,7 +50,6 @@ export class IsNotPrivateUrlConstraint implements ValidatorConstraintInterface {
       } else if (net.isIPv6(hostname)) {
         ipsToCheck.push(hostname);
       } else {
-        // Resolver el hostname → IPs reales
         const { resolve4, resolve6 } = await import('dns/promises');
         const [v4, v6] = await Promise.allSettled([
           resolve4(hostname),

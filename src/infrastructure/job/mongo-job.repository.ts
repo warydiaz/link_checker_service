@@ -7,6 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Job, JobDocument } from './job.schema';
+import { PaginationDto } from 'src/job/dto/pagination.dto';
 
 export class MongoJobRepository implements IJobRepository {
   constructor(@InjectModel(Job.name) private readonly jobModel: Model<Job>) {}
@@ -42,5 +43,14 @@ export class MongoJobRepository implements IJobRepository {
   async delete(_id: string): Promise<void> {
     const result = await this.jobModel.findByIdAndDelete(_id);
     if (!result) throw new Error('Job not found');
+  }
+
+  async listJobs(pagination: PaginationDto): Promise<JobData[]> {
+    const docs = await this.jobModel
+      .find()
+      .skip((pagination.page! - 1) * pagination.limit!)
+      .limit(pagination.limit!)
+      .exec();
+    return docs.map((doc) => this.toJobData(doc));
   }
 }
