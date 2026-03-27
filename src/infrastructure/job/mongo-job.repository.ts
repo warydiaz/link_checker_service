@@ -19,6 +19,7 @@ export class MongoJobRepository implements IJobRepository {
       concurrency: doc.concurrency,
       status: doc.status,
       startedAt: doc.startedAt,
+      finishedAt: doc.finishedAt,
     };
   }
 

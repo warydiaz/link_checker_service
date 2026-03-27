@@ -16,6 +16,11 @@ import {
   CRAWLER_REPOSITORY,
   ICrawlerRepository,
 } from './repository/crawler.repository.interface';
+import { ICrawlerService } from './interfaces/crawler-service.interface';
+import {
+  DOMAIN_FILTER,
+  IDomainFilter,
+} from './interfaces/domain-filter.interface';
 
 interface QueueItem {
   url: string;
@@ -23,7 +28,7 @@ interface QueueItem {
 }
 
 @Injectable()
-export class CrawlerService {
+export class CrawlerService implements ICrawlerService {
   private readonly logger = new Logger(CrawlerService.name);
 
   constructor(
@@ -33,6 +38,7 @@ export class CrawlerService {
     @Inject(HTTP_FETCHER) private readonly httpFetcher: IHttpFetcher,
     @Inject(LINK_EXTRACTOR) private readonly linkExtractor: ILinkExtractor,
     @Inject(CRAWLER_REPOSITORY) private readonly repository: ICrawlerRepository,
+    @Inject(DOMAIN_FILTER) private readonly domainFilter: IDomainFilter,
   ) {}
 
   async startCrawl(
@@ -81,7 +87,10 @@ export class CrawlerService {
 
         for (const link of links) {
           if (visited.size >= maxUrls) break;
-          if (!visited.has(link) && this.isSameDomain(link, seedUrl)) {
+          if (
+            !visited.has(link) &&
+            this.domainFilter.isAllowed(link, seedUrl)
+          ) {
             visited.add(link);
             queue.push({ url: link, sourceUrl: url });
           }
@@ -105,14 +114,6 @@ export class CrawlerService {
     }
 
     this.logger.log(`Job ${jobId} finished — ${visited.size} URLs visited`);
-  }
-
-  private isSameDomain(url: string, seedUrl: string): boolean {
-    try {
-      return new URL(url).hostname === new URL(seedUrl).hostname;
-    } catch {
-      return false;
-    }
   }
 
   async getBrokenLinksByJobId(jobId: string) {

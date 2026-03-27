@@ -1,6 +1,9 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { CreateJobDto } from './dto/create-job.dto';
-import { CrawlerService } from 'src/crawler/crawler.service';
+import {
+  CRAWLER_SERVICE,
+  ICrawlerService,
+} from 'src/crawler/interfaces/crawler-service.interface';
 import {
   IJobRepository,
   JOB_REPOSITORY,
@@ -15,7 +18,7 @@ export class JobsService {
 
   constructor(
     @Inject(JOB_REPOSITORY) private readonly jobRepository: IJobRepository,
-    private readonly crawlerService: CrawlerService,
+    @Inject(CRAWLER_SERVICE) private readonly crawlerService: ICrawlerService,
   ) {}
 
   #DEFAULT_CONCURRENCY = 2;

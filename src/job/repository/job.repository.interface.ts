@@ -24,6 +24,5 @@ export interface IJobRepository {
   findJobById(id: string): Promise<JobData | null>;
   create(data: CreateJobData): Promise<JobData>;
   update(id: string, data: UpdateJobData): Promise<JobData>;
-  delete(id: string): Promise<void>;
   listJobs(pagination: PaginationDto): Promise<JobData[]>;
 }
