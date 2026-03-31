@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CrawlerService } from './crawler.service';
 import { HttpFetcherService } from './http-fetcher.service';
@@ -20,6 +21,7 @@ import { Job, JobSchema } from 'src/infrastructure/job/job.schema';
 
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forFeature([
       { name: Job.name, schema: JobSchema },
       { name: BrokenLink.name, schema: BrokenLinkSchema },
@@ -28,7 +30,10 @@ import { Job, JobSchema } from 'src/infrastructure/job/job.schema';
   providers: [
     CrawlerService,
     { provide: CRAWLER_SERVICE, useClass: CrawlerService },
-    { provide: CONCURRENCY_LIMITER_FACTORY, useClass: PLimitConcurrencyLimiterFactory },
+    {
+      provide: CONCURRENCY_LIMITER_FACTORY,
+      useClass: PLimitConcurrencyLimiterFactory,
+    },
     { provide: HTTP_FETCHER, useClass: HttpFetcherService },
     { provide: LINK_EXTRACTOR, useClass: LinkExtractorService },
     { provide: CRAWLER_REPOSITORY, useClass: MongoCrawlerRepository },

@@ -1,61 +1,94 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
+import { AxiosResponse } from 'axios';
+import { firstValueFrom } from 'rxjs';
 import { FetchResult, IHttpFetcher } from './interfaces/http-fetcher.interface';
 
 @Injectable()
 export class HttpFetcherService implements IHttpFetcher {
   private readonly logger = new Logger(HttpFetcherService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async fetch(url: string): Promise<FetchResult> {
     const timeout = this.configService.get<number>('REQUEST_TIMEOUT_MS', 10000);
     const start = Date.now();
 
     try {
-      const response = await axios.get(url, {
-        timeout,
-        headers: {
-          'User-Agent': this.configService.get('USER_AGENT', 'LinkChecker/1.0'),
-        },
-        validateStatus: () => true,
-      });
+      const response = await firstValueFrom(
+        this.httpService.get<string>(url, {
+          timeout,
+          headers: {
+            'User-Agent': this.configService.get(
+              'USER_AGENT',
+              'LinkChecker/1.0',
+            ),
+          },
+          validateStatus: () => true,
+        }),
+      );
 
       const responseTimeMs = Date.now() - start;
-      const contentType = response.headers['content-type'] ?? '';
-
-      if (!contentType.includes('text/html')) {
-        this.logger.debug(
-          `Skipping non-HTML content at ${url} (${contentType})`,
-        );
-        return { html: null, statusCode: response.status, responseTimeMs };
-      }
-
-      return {
-        html: response.data as string,
-        statusCode: response.status,
-        responseTimeMs,
-      };
+      return this.classifyResponse(url, response, responseTimeMs);
     } catch (error: unknown) {
       const responseTimeMs = Date.now() - start;
-      const axiosError = error as {
-        code?: string;
-        response?: { status: number };
-        message?: string;
-      };
-      const errorType =
-        axiosError.code === 'ECONNABORTED' ? 'TIMEOUT' : 'HTTP_ERROR';
-      const message = error instanceof Error ? error.message : String(error);
+      return this.mapNetworkError(url, error, responseTimeMs);
+    }
+  }
 
-      this.logger.warn(`Failed to fetch ${url}: ${message}`);
-
+  private classifyResponse(
+    url: string,
+    response: AxiosResponse,
+    responseTimeMs: number,
+  ): FetchResult {
+    if (response.status >= 400) {
       return {
         html: null,
-        statusCode: axiosError.response?.status ?? null,
+        statusCode: response.status,
         responseTimeMs,
-        error: { type: errorType, message },
+        error: { type: 'HTTP_ERROR', message: `HTTP ${response.status}` },
       };
     }
+
+    const contentType =
+      (response.headers['content-type'] as string | undefined) ?? '';
+    if (!contentType.includes('text/html')) {
+      this.logger.debug(`Skipping non-HTML content at ${url} (${contentType})`);
+      return { html: null, statusCode: response.status, responseTimeMs };
+    }
+
+    return {
+      html: response.data as string,
+      statusCode: response.status,
+      responseTimeMs,
+    };
+  }
+
+  private mapNetworkError(
+    url: string,
+    error: unknown,
+    responseTimeMs: number,
+  ): FetchResult {
+    const axiosError = error as {
+      code?: string;
+      response?: { status: number };
+      message?: string;
+    };
+    const errorType =
+      axiosError.code === 'ECONNABORTED' ? 'TIMEOUT' : 'HTTP_ERROR';
+    const message = error instanceof Error ? error.message : String(error);
+
+    this.logger.warn(`Failed to fetch ${url}: ${message}`);
+
+    return {
+      html: null,
+      statusCode: axiosError.response?.status ?? null,
+      responseTimeMs,
+      error: { type: errorType, message },
+    };
   }
 }
