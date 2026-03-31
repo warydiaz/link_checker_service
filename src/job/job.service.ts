@@ -11,6 +11,7 @@ import {
 } from './repository/job.repository.interface';
 import { PaginationDto } from './dto/pagination.dto';
 import { BrokenLinkData } from 'src/crawler/repository/crawler.repository.interface';
+import { JobError } from './error';
 
 @Injectable()
 export class JobsService {
@@ -36,11 +37,19 @@ export class JobsService {
     return job;
   }
 
-  async getJob(id: string): Promise<JobData | null> {
-    return await this.jobRepository.findJobById(id);
+  async getJob(id: string): Promise<JobData> {
+    const job = await this.jobRepository.findJobById(id);
+    if (!job) throw JobError.JobNotFound();
+    return job;
   }
 
   async getJobErrors(id: string): Promise<BrokenLinkData[]> {
+    const job = await this.jobRepository.findJobById(id);
+
+    if (!job) {
+      throw JobError.JobNotFound();
+    }
+
     return await this.crawlerService.getBrokenLinksByJobId(id);
   }
 

@@ -5,7 +5,7 @@ import {
   UpdateJobData,
 } from 'src/job/repository/job.repository.interface';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Error as MongooseError, Model } from 'mongoose';
 import { Job, JobDocument } from './job.schema';
 import { PaginationDto } from 'src/job/dto/pagination.dto';
 
@@ -24,8 +24,13 @@ export class MongoJobRepository implements IJobRepository {
   }
 
   async findJobById(_id: string): Promise<JobData | null> {
-    const doc = await this.jobModel.findById(_id).exec();
-    return doc ? this.toJobData(doc) : null;
+    try {
+      const doc = await this.jobModel.findById(_id).exec();
+      return doc ? this.toJobData(doc) : null;
+    } catch (err) {
+      if (err instanceof MongooseError.CastError) return null;
+      throw err;
+    }
   }
 
   async create(_data: CreateJobData): Promise<JobData> {

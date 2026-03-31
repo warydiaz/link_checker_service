@@ -8,9 +8,22 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: link_checker_service
     command: ["--quiet", "--logpath", "/dev/null"]
     volumes:
       - mongo_data:/data/db
 
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    depends_on:
+      - mongo
+
 volumes:
   mongo_data:
+  metabase_data:

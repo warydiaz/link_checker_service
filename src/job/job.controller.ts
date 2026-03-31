@@ -14,11 +14,13 @@ import { PaginationDto } from './dto/pagination.dto';
 @Controller('jobs')
 export class JobsController {
   constructor(private jobService: JobsService) {}
+
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
   async createJob(@Query() createJobDto: CreateJobDto) {
     return await this.jobService.createJob(createJobDto);
   }
+
   @Get(':id')
   async getJob(@Param('id') id: string) {
     return await this.jobService.getJob(id);
