@@ -13,6 +13,13 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  redis:
+    image: redis:alpine
+    container_name: redis-light
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
   metabase:
     image: metabase/metabase:latest
     container_name: metabase

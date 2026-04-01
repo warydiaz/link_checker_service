@@ -12,6 +12,7 @@ import {
 import { PaginationDto } from './dto/pagination.dto';
 import { BrokenLinkData } from 'src/crawler/repository/crawler.repository.interface';
 import { JobError } from './error';
+import { IJobQueue, JOB_QUEUE } from './queue/job-queue.interface';
 
 @Injectable()
 export class JobsService {
@@ -20,6 +21,7 @@ export class JobsService {
   constructor(
     @Inject(JOB_REPOSITORY) private readonly jobRepository: IJobRepository,
     @Inject(CRAWLER_SERVICE) private readonly crawlerService: ICrawlerService,
+    @Inject(JOB_QUEUE) private readonly jobQueue: IJobQueue,
   ) {}
 
   #DEFAULT_CONCURRENCY = 2;
@@ -32,7 +34,11 @@ export class JobsService {
       startedAt: new Date(),
     });
 
-    this.runCrawl(job._id, createJobDto.url, job.concurrency);
+    await this.jobQueue.add({
+      jobId: job._id,
+      url: createJobDto.url,
+      concurrency: job.concurrency,
+    });
 
     return job;
   }
@@ -55,25 +61,5 @@ export class JobsService {
 
   async getAllJobs(paginationDto: PaginationDto): Promise<JobData[]> {
     return await this.jobRepository.listJobs(paginationDto);
-  }
-
-  private runCrawl(jobId: string, seedUrl: string, concurrency: number): void {
-    this.crawlerService
-      .startCrawl(jobId, seedUrl, concurrency)
-      .then(() => {
-        return this.jobRepository.update(jobId, {
-          _id: jobId,
-          status: 'completed',
-          finishedAt: new Date(),
-        });
-      })
-      .catch((err: unknown) => {
-        this.logger.error(`Job ${jobId} failed: ${String(err)}`);
-        return this.jobRepository.update(jobId, {
-          _id: jobId,
-          status: 'failed',
-          finishedAt: new Date(),
-        });
-      });
   }
 }

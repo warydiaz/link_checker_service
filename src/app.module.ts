@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JobsModule } from './job/job.module';
 import { CrawlerModule } from './crawler/crawler.module';
 import { DatabaseModule } from './database/database.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -10,6 +11,15 @@ import { DatabaseModule } from './database/database.module';
     JobsModule,
     CrawlerModule,
     DatabaseModule,
+    BullModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+        },
+      }),
+      inject: [ConfigService],
+    }),
   ],
   controllers: [],
   providers: [],
