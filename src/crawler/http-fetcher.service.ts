@@ -8,6 +8,9 @@ import { FetchResult, IHttpFetcher } from './interfaces/http-fetcher.interface';
 @Injectable()
 export class HttpFetcherService implements IHttpFetcher {
   private readonly logger = new Logger(HttpFetcherService.name);
+  #METHOD_NOT_ALLOWED = 405;
+  #NOT_IMPLEMENTED = 501;
+  #CLIENT_OR_SERVER_ERROR = 400;
 
   constructor(
     private readonly httpService: HttpService,
@@ -18,7 +21,10 @@ export class HttpFetcherService implements IHttpFetcher {
     const timeout = this.configService.get<number>('REQUEST_TIMEOUT_MS', 10000);
     const start = Date.now();
     const headers = {
-      'User-Agent': this.configService.get('USER_AGENT', 'LinkChecker/1.0'),
+      'User-Agent': this.configService.get<string>(
+        'USER_AGENT',
+        'LinkChecker/1.0',
+      ),
     };
 
     try {
@@ -31,13 +37,16 @@ export class HttpFetcherService implements IHttpFetcher {
       );
 
       // Some servers don't support HEAD — fall back to GET
-      if (headResponse.status === 405 || headResponse.status === 501) {
+      if (
+        headResponse.status === this.#METHOD_NOT_ALLOWED ||
+        headResponse.status === this.#NOT_IMPLEMENTED
+      ) {
         return this.fetchWithGet(url, start, timeout, headers);
       }
 
       const responseTimeMs = Date.now() - start;
 
-      if (headResponse.status >= 400) {
+      if (headResponse.status >= this.#CLIENT_OR_SERVER_ERROR) {
         return {
           html: null,
           statusCode: headResponse.status,
@@ -89,7 +98,7 @@ export class HttpFetcherService implements IHttpFetcher {
     response: AxiosResponse,
     responseTimeMs: number,
   ): FetchResult {
-    if (response.status >= 400) {
+    if (response.status >= this.#CLIENT_OR_SERVER_ERROR) {
       return {
         html: null,
         statusCode: response.status,
